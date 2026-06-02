@@ -1,4 +1,5 @@
 import { RefObject } from 'react';
+import { Location } from 'react-router-dom';
 import { TIngredient, TTabMode } from '@utils-types';
 
 export type BurgerIngredientsUIProps = {
@@ -13,4 +14,7 @@ export type BurgerIngredientsUIProps = {
   mainsRef: (node?: Element | null | undefined) => void;
   saucesRef: (node?: Element | null | undefined) => void;
   onTabClick: (val: string) => void;
+  onIngredientAdd: (ingredient: TIngredient) => void;
+  getIngredientCount: (ingredient: TIngredient) => number;
+  locationState: { background: Location };
 };
