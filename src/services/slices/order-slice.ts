@@ -34,15 +34,23 @@ const initialState: TOrderState = {
   feedError: null
 };
 
+type TOrderWithToday = {
+  order: TOrder;
+  isToday: boolean;
+};
+
 export const makeOrder = createAsyncThunk<
-  TOrder,
+  TOrderWithToday,
   string[],
   { rejectValue: string }
 >('order/makeOrder', async (ingredientIds, { rejectWithValue }) => {
   try {
     const response = await orderBurgerApi(ingredientIds);
     if (response.order) {
-      return response.order as unknown as TOrder;
+      const order = response.order as unknown as TOrder;
+      const isToday =
+        new Date(order.createdAt).toDateString() === new Date().toDateString();
+      return { order, isToday };
     }
     return rejectWithValue('Не удалось создать заказ');
   } catch (error) {
@@ -87,11 +95,18 @@ const orderSlice = createSlice({
     setBun(state, action: PayloadAction<TIngredient>) {
       state.bun = action.payload;
     },
-    addIngredient(state, action: PayloadAction<TIngredient>) {
-      state.ingredients.push({
-        ...action.payload,
-        id: `${action.payload._id}-${Date.now()}-${Math.random()}`
-      });
+    addIngredient: {
+      reducer(state, action: PayloadAction<TConstructorIngredient>) {
+        state.ingredients.push(action.payload);
+      },
+      prepare(ingredient: TIngredient) {
+        return {
+          payload: {
+            ...ingredient,
+            id: `${ingredient._id}-${Date.now()}-${Math.random()}`
+          } as TConstructorIngredient
+        };
+      }
     },
     removeIngredient(state, action: PayloadAction<string>) {
       state.ingredients = state.ingredients.filter(
@@ -101,7 +116,6 @@ const orderSlice = createSlice({
     clearConstructor(state) {
       state.bun = null;
       state.ingredients = [];
-      state.orderModalData = null;
       state.orderError = null;
     },
     closeOrderModal(state) {
@@ -118,15 +132,14 @@ const orderSlice = createSlice({
       })
       .addCase(makeOrder.fulfilled, (state, action) => {
         state.orderRequest = false;
-        state.orderModalData = action.payload;
+        state.bun = null;
+        state.ingredients = [];
+        state.orderModalData = action.payload.order;
         state.orderError = null;
-        state.orders = [action.payload, ...state.orders];
-        state.feedOrders = [action.payload, ...state.feedOrders];
+        state.orders = [action.payload.order, ...state.orders];
+        state.feedOrders = [action.payload.order, ...state.feedOrders];
         state.feedTotal += 1;
-        if (
-          new Date(action.payload.createdAt).toDateString() ===
-          new Date().toDateString()
-        ) {
+        if (action.payload.isToday) {
           state.feedTotalToday += 1;
         }
       })

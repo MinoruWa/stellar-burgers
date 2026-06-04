@@ -6,7 +6,7 @@ export type TIngredientsCategoryProps = {
   title: string;
   titleRef: RefObject<HTMLHeadingElement>;
   ingredients: TIngredient[];
-  ingredientsCounters: Record<string, number>;
+  ingredientsCounters: Record<string, number | undefined>;
   onIngredientAdd: (ingredient: TIngredient) => void;
   locationState: { background: Location };
 };

@@ -136,6 +136,8 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error =
           action.payload ?? 'Не удалось получить данные пользователя';
+        deleteCookie('accessToken');
+        localStorage.removeItem('refreshToken');
       })
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
@@ -169,6 +171,20 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isAuthenticated = false;
         state.error = action.payload ?? 'Не удалось зарегистрироваться';
+      })
+      .addCase(updateUser.pending, (state) => {
+        state.isLoading = true;
+        state.updateUserError = null;
+      })
+      .addCase(updateUser.fulfilled, (state, action: PayloadAction<TUser>) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.updateUserError = null;
+      })
+      .addCase(updateUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.updateUserError =
+          action.payload ?? 'Не удалось обновить данные пользователя';
       })
       .addCase(logoutUser.pending, (state) => {
         state.isLoading = true;

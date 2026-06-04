@@ -66,10 +66,14 @@ export const BurgerIngredients: FC = () => {
 
   const getIngredientCount = (ingredient: TIngredient) => {
     if (ingredient.type === 'bun') {
-      return bun?._id === ingredient._id ? 2 : 0;
+      return bun?._id === ingredient._id ? 2 : undefined;
     }
-    return selectedIngredients.filter((item) => item._id === ingredient._id)
-      .length;
+
+    const count = selectedIngredients.filter(
+      (item) => item._id === ingredient._id
+    ).length;
+
+    return count > 0 ? count : undefined;
   };
 
   const handleAddIngredient = (ingredient: TIngredient) => {

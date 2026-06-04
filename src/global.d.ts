@@ -1,5 +1,8 @@
 import 'react';
 
+declare module '*.css';
+declare module '*.svg';
+
 declare module 'react' {
   interface HTMLAttributes<T> {
     onPointerEnterCapture?: (e: React.PointerEvent<T>) => void;

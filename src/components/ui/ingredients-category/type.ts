@@ -5,7 +5,7 @@ export type TIngredientsCategoryUIProps = {
   title: string;
   titleRef: React.RefObject<HTMLHeadingElement>;
   ingredients: TIngredient[];
-  ingredientsCounters: Record<string, number>;
+  ingredientsCounters: Record<string, number | undefined>;
   onIngredientAdd: (ingredient: TIngredient) => void;
   locationState: { background: Location };
 };

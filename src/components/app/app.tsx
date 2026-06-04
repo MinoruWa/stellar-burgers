@@ -21,7 +21,8 @@ import {
   Route,
   useNavigate,
   useLocation,
-  Navigate
+  Navigate,
+  Location
 } from 'react-router-dom';
 import { useDispatch, useSelector } from '../../services/store';
 import { fetchUser } from '../../services/slices/auth-slice';
@@ -59,9 +60,18 @@ const ProfileOrderModal = () => {
 
 const RequireAuth = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isLoading } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
   const location = useLocation();
+  const accessToken = getCookie('accessToken');
+  const refreshToken = localStorage.getItem('refreshToken');
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading && (accessToken || refreshToken)) {
+      dispatch(fetchUser());
+    }
+  }, [dispatch, isAuthenticated, isLoading, accessToken, refreshToken]);
+
+  if (isLoading || (!isAuthenticated && (accessToken || refreshToken))) {
     return <Preloader />;
   }
 
@@ -74,16 +84,117 @@ const RequireAuth = ({ children }: { children: ReactNode }) => {
 
 const RequireUnauth = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isLoading } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const location = useLocation();
+  const accessToken = getCookie('accessToken');
+  const refreshToken = localStorage.getItem('refreshToken');
+  const from = (location.state as { from?: Location })?.from?.pathname || '/';
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading && (accessToken || refreshToken)) {
+      dispatch(fetchUser());
+    }
+  }, [dispatch, isAuthenticated, isLoading, accessToken, refreshToken]);
+
+  if (isLoading || (!isAuthenticated && (accessToken || refreshToken))) {
     return <Preloader />;
   }
 
   if (isAuthenticated) {
-    return <Navigate to='/' replace />;
+    return <Navigate to={from} replace />;
   }
 
   return <>{children}</>;
+};
+
+const AppContent = () => {
+  const location = useLocation();
+  const backgroundLocation = (location.state as { background?: Location })
+    ?.background;
+
+  return (
+    <div className={styles.app}>
+      <AppHeader />
+      <Routes location={backgroundLocation || location}>
+        <Route path='/' element={<ConstructorPage />} />
+        <Route path='/feed' element={<Feed />} />
+        <Route path='/feed/:number' element={<OrderInfo />} />
+        <Route
+          path='/login'
+          element={
+            <RequireUnauth>
+              <Login />
+            </RequireUnauth>
+          }
+        />
+        <Route
+          path='/register'
+          element={
+            <RequireUnauth>
+              <Register />
+            </RequireUnauth>
+          }
+        />
+        <Route
+          path='/forgot-password'
+          element={
+            <RequireUnauth>
+              <ForgotPassword />
+            </RequireUnauth>
+          }
+        />
+        <Route
+          path='/reset-password'
+          element={
+            <RequireUnauth>
+              <ResetPassword />
+            </RequireUnauth>
+          }
+        />
+        <Route
+          path='/profile'
+          element={
+            <RequireAuth>
+              <Profile />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path='/profile/orders'
+          element={
+            <RequireAuth>
+              <ProfileOrders />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path='/profile/orders/:number'
+          element={
+            <RequireAuth>
+              <OrderInfo />
+            </RequireAuth>
+          }
+        />
+        <Route path='/ingredients/:id' element={<IngredientDetails />} />
+        <Route path='*' element={<NotFound404 />} />
+      </Routes>
+
+      {backgroundLocation && (
+        <Routes>
+          <Route path='/feed/:number' element={<FeedOrderModal />} />
+          <Route
+            path='/profile/orders/:number'
+            element={
+              <RequireAuth>
+                <ProfileOrderModal />
+              </RequireAuth>
+            }
+          />
+          <Route path='/ingredients/:id' element={<IngredientDetailsModal />} />
+        </Routes>
+      )}
+    </div>
+  );
 };
 
 const App = () => {
@@ -100,58 +211,7 @@ const App = () => {
 
   return (
     <BrowserRouter>
-      <div className={styles.app}>
-        <AppHeader />
-        <Routes>
-          <Route path='/' element={<ConstructorPage />} />
-          <Route path='/feed' element={<Feed />} />
-          <Route path='/feed/:number' element={<FeedOrderModal />} />
-          <Route
-            path='/login'
-            element={
-              <RequireUnauth>
-                <Login />
-              </RequireUnauth>
-            }
-          />
-          <Route
-            path='/register'
-            element={
-              <RequireUnauth>
-                <Register />
-              </RequireUnauth>
-            }
-          />
-          <Route path='/forgot-password' element={<ForgotPassword />} />
-          <Route path='/reset-password' element={<ResetPassword />} />
-          <Route
-            path='/profile'
-            element={
-              <RequireAuth>
-                <Profile />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path='/profile/orders'
-            element={
-              <RequireAuth>
-                <ProfileOrders />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path='/profile/orders/:number'
-            element={
-              <RequireAuth>
-                <ProfileOrderModal />
-              </RequireAuth>
-            }
-          />
-          <Route path='/ingredients/:id' element={<IngredientDetailsModal />} />
-          <Route path='*' element={<NotFound404 />} />
-        </Routes>
-      </div>
+      <AppContent />
     </BrowserRouter>
   );
 };
