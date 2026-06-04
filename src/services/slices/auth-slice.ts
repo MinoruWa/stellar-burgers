@@ -39,6 +39,8 @@ export const fetchUser = createAsyncThunk<TUser, void, { rejectValue: string }>(
       const response = await getUserApi();
       return response.user;
     } catch (error) {
+      deleteCookie('accessToken');
+      localStorage.removeItem('refreshToken');
       return rejectWithValue(
         (error as Error).message || 'Не удалось получить данные пользователя'
       );
@@ -136,8 +138,6 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error =
           action.payload ?? 'Не удалось получить данные пользователя';
-        deleteCookie('accessToken');
-        localStorage.removeItem('refreshToken');
       })
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;

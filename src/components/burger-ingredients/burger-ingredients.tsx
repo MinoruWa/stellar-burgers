@@ -6,7 +6,6 @@ import { TTabMode, TIngredient } from '@utils-types';
 import { BurgerIngredientsUI } from '../ui/burger-ingredients';
 import { Preloader } from '../ui';
 import { useDispatch, useSelector } from '../../services/store';
-import { fetchIngredients } from '../../services/slices/ingredients-slice';
 import { addIngredient, setBun } from '../../services/slices/order-slice';
 
 export const BurgerIngredients: FC = () => {
@@ -37,12 +36,6 @@ export const BurgerIngredients: FC = () => {
   const [saucesRef, inViewSauces] = useInView({
     threshold: 0
   });
-
-  useEffect(() => {
-    if (!items.length) {
-      dispatch(fetchIngredients());
-    }
-  }, [dispatch, items.length]);
 
   useEffect(() => {
     if (inViewBuns) {

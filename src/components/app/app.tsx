@@ -26,6 +26,7 @@ import {
 } from 'react-router-dom';
 import { useDispatch, useSelector } from '../../services/store';
 import { fetchUser } from '../../services/slices/auth-slice';
+import { fetchIngredients } from '../../services/slices/ingredients-slice';
 import { getCookie } from '../../utils/cookie';
 
 const FeedOrderModal = () => {
@@ -199,6 +200,7 @@ const AppContent = () => {
 
 const App = () => {
   const dispatch = useDispatch();
+  const { items: ingredients } = useSelector((state) => state.ingredients);
 
   useEffect(() => {
     const accessToken = getCookie('accessToken');
@@ -207,7 +209,10 @@ const App = () => {
     if (accessToken || refreshToken) {
       dispatch(fetchUser());
     }
-  }, [dispatch]);
+    if (!ingredients.length) {
+      dispatch(fetchIngredients());
+    }
+  }, [dispatch, ingredients.length]);
 
   return (
     <BrowserRouter>
