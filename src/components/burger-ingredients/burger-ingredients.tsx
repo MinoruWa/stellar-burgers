@@ -1,14 +1,24 @@
 import { useState, useRef, useEffect, FC } from 'react';
 import { useInView } from 'react-intersection-observer';
+import { useLocation } from 'react-router-dom';
 
-import { TTabMode } from '@utils-types';
+import { TTabMode, TIngredient } from '@utils-types';
 import { BurgerIngredientsUI } from '../ui/burger-ingredients';
+import { Preloader } from '../ui';
+import { useDispatch, useSelector } from '../../services/store';
+import { addIngredient, setBun } from '../../services/slices/order-slice';
 
 export const BurgerIngredients: FC = () => {
-  /** TODO: взять переменные из стора */
-  const buns = [];
-  const mains = [];
-  const sauces = [];
+  const dispatch = useDispatch();
+  const location = useLocation();
+  const { items, isLoading, error } = useSelector((state) => state.ingredients);
+  const { bun, ingredients: selectedIngredients } = useSelector(
+    (state) => state.order
+  );
+
+  const buns = items.filter((item) => item.type === 'bun');
+  const mains = items.filter((item) => item.type === 'main');
+  const sauces = items.filter((item) => item.type === 'sauce');
 
   const [currentTab, setCurrentTab] = useState<TTabMode>('bun');
   const titleBunRef = useRef<HTMLHeadingElement>(null);
@@ -47,7 +57,33 @@ export const BurgerIngredients: FC = () => {
       titleSaucesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  return null;
+  const getIngredientCount = (ingredient: TIngredient) => {
+    if (ingredient.type === 'bun') {
+      return bun?._id === ingredient._id ? 2 : undefined;
+    }
+
+    const count = selectedIngredients.filter(
+      (item) => item._id === ingredient._id
+    ).length;
+
+    return count > 0 ? count : undefined;
+  };
+
+  const handleAddIngredient = (ingredient: TIngredient) => {
+    if (ingredient.type === 'bun') {
+      dispatch(setBun(ingredient));
+    } else {
+      dispatch(addIngredient(ingredient));
+    }
+  };
+
+  if (isLoading) {
+    return <Preloader />;
+  }
+
+  if (error) {
+    return <div className='text text_type_main-medium pt-4'>{error}</div>;
+  }
 
   return (
     <BurgerIngredientsUI
@@ -62,6 +98,9 @@ export const BurgerIngredients: FC = () => {
       mainsRef={mainsRef}
       saucesRef={saucesRef}
       onTabClick={onTabClick}
+      onIngredientAdd={handleAddIngredient}
+      getIngredientCount={getIngredientCount}
+      locationState={{ background: location }}
     />
   );
 };

@@ -1,23 +1,61 @@
-import { FC, useMemo } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { Preloader } from '../ui/preloader';
 import { OrderInfoUI } from '../ui/order-info';
-import { TIngredient } from '@utils-types';
+import { TIngredient, TOrder } from '@utils-types';
+import { useDispatch, useSelector } from '../../services/store';
+import { getOrderByNumberApi } from '../../utils/burger-api';
 
 export const OrderInfo: FC = () => {
-  /** TODO: взять переменные orderData и ingredients из стора */
-  const orderData = {
-    createdAt: '',
-    ingredients: [],
-    _id: '',
-    status: '',
-    name: '',
-    updatedAt: 'string',
-    number: 0
-  };
+  const { number } = useParams();
+  const orderNumber = number ? Number(number) : undefined;
+  const dispatch = useDispatch();
+  const { items: ingredients, isLoading: ingredientsLoading } = useSelector(
+    (state) => state.ingredients
+  );
+  const { orders, feedOrders, orderModalData } = useSelector(
+    (state) => state.order
+  );
 
-  const ingredients: TIngredient[] = [];
+  const [orderData, setOrderData] = useState<TOrder | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  /* Готовим данные для отображения */
+  useEffect(() => {
+    if (!orderNumber) return;
+
+    const foundOrder =
+      orderModalData?.number === orderNumber
+        ? orderModalData
+        : orders.find((item) => item.number === orderNumber) ||
+          feedOrders.find((item) => item.number === orderNumber);
+
+    if (foundOrder) {
+      setOrderData(foundOrder);
+      setError(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    getOrderByNumberApi(orderNumber)
+      .then((data) => {
+        const nextOrder = data.orders?.[0] ?? null;
+        if (nextOrder) {
+          setOrderData(nextOrder);
+        } else {
+          setError('Заказ не найден');
+        }
+      })
+      .catch((err) => {
+        setError((err as Error).message || 'Не удалось загрузить заказ');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [orderNumber, orders, feedOrders, orderModalData]);
+
   const orderInfo = useMemo(() => {
     if (!orderData || !ingredients.length) return null;
 
@@ -59,8 +97,16 @@ export const OrderInfo: FC = () => {
     };
   }, [orderData, ingredients]);
 
-  if (!orderInfo) {
+  if (isLoading || ingredientsLoading || (!orderInfo && !error)) {
     return <Preloader />;
+  }
+
+  if (error) {
+    return <div className='text text_type_main-medium pt-4'>{error}</div>;
+  }
+
+  if (!orderInfo) {
+    return null;
   }
 
   return <OrderInfoUI orderInfo={orderInfo} />;

@@ -4,15 +4,15 @@ import { IngredientDetailsUIProps } from './type';
 
 export const IngredientDetailsUI: FC<IngredientDetailsUIProps> = memo(
   ({ ingredientData }) => {
-    const { name, image_large, calories, proteins, fat, carbohydrates } =
+    const { name, image_large, image, calories, proteins, fat, carbohydrates } =
       ingredientData;
 
     return (
       <div className={styles.content}>
         <img
           className={styles.img}
-          alt='изображение ингредиента.'
-          src={image_large}
+          alt={`изображение ингредиента ${name}`}
+          src={image_large || image}
         />
         <h3 className='text text_type_main-medium mt-2 mb-4'>{name}</h3>
         <ul className={`${styles.nutritional_values} text_type_main-default`}>
