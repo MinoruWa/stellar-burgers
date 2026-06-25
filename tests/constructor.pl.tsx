@@ -2,7 +2,21 @@ import { expect, Page, test } from '@playwright/test';
 
 const openIngredientModal = async (page: Page) => {
   await page.goto('/');
+  await expect(page.locator('#modals')).toBeEmpty();
   await page.getByText('Моковая космическая булка').click();
+};
+
+const expectEmptyConstructor = async (page: Page) => {
+  const constructor = page.locator('main section').nth(1);
+
+  await expect(constructor.getByText('Выберите булки')).toHaveCount(2);
+  await expect(constructor.getByText('Выберите начинку')).toBeVisible();
+  await expect(constructor.getByText('Моковая космическая булка')).toHaveCount(
+    0
+  );
+  await expect(
+    constructor.getByText('Моковая метеоритная котлета')
+  ).toHaveCount(0);
 };
 
 const setMockAuthTokens = async (page: Page) => {
@@ -48,17 +62,17 @@ test.describe('страница конструктора', () => {
     await page.routeFromHAR('tests/hars/ingredients.har', {
       url: '**/api/ingredients',
       update: false,
-      notFound: 'fallback'
+      notFound: 'abort'
     });
     await page.routeFromHAR('tests/hars/user.har', {
       url: '**/api/auth/user',
       update: false,
-      notFound: 'fallback'
+      notFound: 'abort'
     });
     await page.routeFromHAR('tests/hars/order.har', {
       url: '**/api/orders',
       update: false,
-      notFound: 'fallback'
+      notFound: 'abort'
     });
   });
 
@@ -75,6 +89,7 @@ test.describe('страница конструктора', () => {
       page
     }) => {
       await page.goto('/');
+      await expectEmptyConstructor(page);
 
       await collectBurger(page);
 
@@ -131,6 +146,10 @@ test.describe('страница конструктора', () => {
   });
 
   test.describe('создание заказа', () => {
+    test.afterEach(async ({ page }) => {
+      await clearMockAuthTokens(page);
+    });
+
     test('создает заказ и показывает верный номер в модальном окне', async ({
       page
     }) => {
@@ -161,14 +180,6 @@ test.describe('страница конструктора', () => {
       await page.locator('#modals button').click();
 
       await expect(page.locator('#modals').getByText('12345')).toBeHidden();
-
-      await clearMockAuthTokens(page);
-      await expect(
-        page.evaluate(() => window.localStorage.getItem('refreshToken'))
-      ).resolves.toBeNull();
-      await expect(
-        page.context().cookies('http://127.0.0.1:4000')
-      ).resolves.toEqual([]);
     });
   });
 });
